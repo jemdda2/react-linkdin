@@ -1,17 +1,51 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { auth } from './firebase/firebase';
 import styled from 'styled-components/macro';
+import { login } from './features/userSlice';
 
 function Login() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [name, setName] = useState("");
+	const [profilePic, setProfilePic] = useState("");
+	const dispatch = useDispatch();
 
 	const loginToApp = (e) => {
 		e.preventDefault();
+
+		auth.signInWithEmailAndPassword(email, password)
+			.then(userAuth => {
+				dispatch(login({
+					email: userAuth.user.email,
+					uid: userAuth.user.uid,
+					displayName: userAuth.user.displayName,
+					profileUrl: userAuth.user.photoURL,
+				}))
+			}).catch(error => alert)
 	}
 
 	const register = () => {
+		if (!name) {
+			return alert("Please enter a full name!");
+		}
+
+		auth.createUserWithEmailAndPassword(email, password)
+			.then((userAuth) => {
+				userAuth.user.updateProfile({
+					displayName: name,
+					photoUrl: profilePic,
+				})
+				.then(() => {
+					dispatch(login({
+						email: userAuth.user.email,
+						uid: userAuth.user.uid,
+						displayName: name,
+						photoUrl: profilePic,
+					}))
+				})
+			})
+			.catch((error) => alert(error));
 	}
 	
 	return (
@@ -21,8 +55,18 @@ function Login() {
 				alt=""
 			/>
 			<form>
-				<input placeholder="Full name (required if registering)" type="text" />
-				<input placeholder="Profile pic URL (optional)" type="text" />
+				<input 
+					value={name}
+					onChange={e => setName(e.target.value)}
+					placeholder="Full name (required if registering)" 
+					type="text" 
+				/>
+				<input 
+					value={profilePic}
+					onChange={e => setProfilePic(e.target.value)}
+					placeholder="Profile pic URL (optional)" 
+					type="text" 
+				/>
 				<input 
 					value={email} 
 					onChange={e => setEmail(e.target.value)} 
